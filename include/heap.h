@@ -22,13 +22,11 @@ class Heap {
         node_t *head; // Pointer to the start of the free list
         node_t *tail; // Pointer to the end sentinel of the heap
     
-        // Constructor: Initializes an empty heap structure (heap is set up lazily)
+        // Constructor
         Heap() {
             head = NULL;
             tail = NULL;
         }
-    
-        // ----------- Public Interface (for users) -----------
     
         /**
          * Initializes the heap if it hasn't been started yet and returns the head of the free list.
@@ -51,8 +49,6 @@ class Heap {
          * Prints a visual representation of the free list, showing block sizes.
          */
         void print_free_list();
-    
-        // ----------- Internal Helpers (should be private when finalized) -----------
     
         /**
          * Allocates a block of memory from the heap.
@@ -90,6 +86,6 @@ class Heap {
          * @param free_block Pointer to the block being freed.
          */
         void coalesce(node_t *free_block);
-    };
+};
 
-    #endif
+#endif

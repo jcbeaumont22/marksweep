@@ -89,7 +89,7 @@ void Heap::find_free(size_t size, node_t **found, node_t **prev) {
  * @param allocated Output parameter pointing to the newly allocated block (with metadata).
  */
 void Heap::split(size_t size, node_t **prev, node_t **free_block,
-                 Allocation **allocated) {
+                    GarbageCollector::allocation **allocated) {
     assert(*free_block != NULL);
 
     node_t *temp = *free_block;

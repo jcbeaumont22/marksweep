@@ -60,7 +60,6 @@ void GarbageCollector::walk_block(void* ptr) {
  * Marks all reachable memory blocks starting from the root set.
  */
 void GarbageCollector::mark() {
-    cout << "Beginning marking phase..." << endl;
 
     // Clear all markings
     for (auto alloc = allocations.begin(); alloc != allocations.end(); alloc++) {
@@ -71,7 +70,9 @@ void GarbageCollector::mark() {
     for (void* root : root_set) {
         auto alloc = allocations.find(root);
         if (alloc != allocations.end()) {
-            walk_block(alloc->first); // Traverse the block's memory to identify additional references
+            if (!alloc->second->marked) {
+                walk_block(alloc->first); // Traverse the block's memory to identify additional references
+            }
         }
     }
 }
@@ -83,7 +84,6 @@ void GarbageCollector::mark() {
  * @param heap Pointer to the heap object used for deallocation.
  */
 void GarbageCollector::sweep(Heap *heap) {
-    cout << "Beginning sweeping phase..." << endl;
     
     // Free all allocations not marked as found
     if (allocations.empty()) {
@@ -104,12 +104,11 @@ void GarbageCollector::sweep(Heap *heap) {
  * reference count.
  * 
  * @param ptr Pointer to add to the root set.
- * @return 0 if successful, -1 on failure.
  */
-int GarbageCollector::add_reference(void *ptr) {
+void GarbageCollector::add_reference(void *ptr) {
     cout << "Adding reference: " << ptr << " to root_set" << endl;
     root_set.insert(ptr);
-    return 0;
+    reference_count[ptr] += 1;
 }
 
 /**
@@ -126,6 +125,7 @@ int GarbageCollector::add_nested_reference(void *src, void *dest) {
     allocation *alloc = (allocation *)((char*)src - sizeof(allocation));
     if (alloc->size >= sizeof(void *)) {
         ((void **)src)[0] = dest;
+        reference_count[dest]++;
     } else {
         cerr << "ERROR: Not enough space for nested reference!" << endl;
         return -1;
@@ -137,12 +137,15 @@ int GarbageCollector::add_nested_reference(void *src, void *dest) {
  * Deletes a reference from the root set.
  * 
  * @param ptr Pointer that is being deleted.
- * @return 0 if successful, -1 on failure.
  */
-int GarbageCollector::delete_reference(void *ptr) {
+void GarbageCollector::delete_reference(void *ptr) {
     cout << "Deleting reference: " << ptr << " from root_set" << endl;
-    root_set.erase(ptr);
-    return 0;
+    int erased = root_set.erase(ptr);
+
+    // Check that a reference was actually deleted
+    if (erased > 0) {
+        reference_count[ptr]--;
+    }
 }
 
 /**
@@ -151,17 +154,24 @@ int GarbageCollector::delete_reference(void *ptr) {
  * @param heap Pointer to the heap to be garbage collected.
  */
 void GarbageCollector::ms_collect(Heap *heap) {
-    cout << "----- START MS_COLLECT() -----" << endl;
+    cout << "EXECUTE MS_COLLECT() AT: " << heap << endl;
     mark();
     sweep(heap);
-    cout << "----- FINISH MS_COLLECT() -----" << endl;
 }
 
 /**
- * Executes the reference counting garbage collection algorithm.ADJ_FREQUENCY
+ * Executes the reference counting garbage collection algorithm.
  * 
  * @param heap Pointer to the heap to be garbage collected.
  */
 void GarbageCollector::rc_collect(Heap *heap) {
-
+    cout << "EXECUTE RC_COLLECT() AT: " << heap << endl;
+    for (auto block = reference_count.begin(); block != reference_count.end(); ) {
+        if (block->second <= 0) {
+            heap->my_free(block->first);
+            block = reference_count.erase(block);
+        } else {
+            block++;
+        }
+    }
 }
