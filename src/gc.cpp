@@ -40,7 +40,7 @@ void GarbageCollector::walk_block(void* ptr) {
 
     uintptr_t* scan = reinterpret_cast<uintptr_t*>(ptr);
     uintptr_t* end = reinterpret_cast<uintptr_t*>(reinterpret_cast<char*>(ptr) + size);
-    
+
     while (scan < end) {
         void* maybe_ptr = reinterpret_cast<void*>(*scan);
         if (allocations.find(maybe_ptr) != allocations.end()) {
@@ -96,6 +96,14 @@ void GarbageCollector::sweep(Heap *heap) {
             alloc++;
         }
     }
+}
+
+int GarbageCollector::add_reference(void *ptr) {
+
+}
+
+int GarbageCollector::delete_reference(void *ptr) {
+
 }
 
 void GarbageCollector::ms_collect(Heap *heap) {
