@@ -30,7 +30,7 @@ public:
      * This is the internal structure used to manage all tracked heap allocations.
      * Only modified during malloc() and sweep().
      */
-    typedef map<void*, allocation> PointerMap;
+    typedef map<void*, allocation*> PointerMap;
 
     PointerMap allocations;   // Tracks all active heap allocations.
     

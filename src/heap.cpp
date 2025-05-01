@@ -108,6 +108,7 @@ void Heap::split(size_t size, node_t **prev, node_t **free_block,
 
     *allocated = (Allocation *)temp;
     (*allocated)->size = size;
+    (*allocated)->marked = false;
 }
 
 /**

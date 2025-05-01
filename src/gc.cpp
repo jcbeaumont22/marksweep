@@ -14,8 +14,8 @@ void* GarbageCollector::malloc(size_t size, Heap *heap) {
     void *ptr = heap->my_malloc(size);
 
     if (ptr) {
-        allocation allocation = {size, false};
-        allocations[ptr] = allocation;
+        allocations[ptr] = (allocation *)((char*)ptr - sizeof(allocation));
+        add_reference(ptr);
     } else {
         cerr << "Memory allocation failed!" << endl;
         return NULL;
@@ -32,10 +32,12 @@ void* GarbageCollector::malloc(size_t size, Heap *heap) {
 void GarbageCollector::walk_block(void* ptr) {
     if (!ptr) return;
 
-    allocation *alloc = ((allocation *)ptr) - 1;
+    allocation *alloc = (allocation *)(((char *)ptr) - sizeof(allocation));
     size_t size = alloc->size;
 
-    if (alloc->marked) return;
+    if (alloc->marked) {
+        return;
+    }
     alloc->marked = true;
 
     uintptr_t* scan = reinterpret_cast<uintptr_t*>(ptr);
@@ -44,9 +46,8 @@ void GarbageCollector::walk_block(void* ptr) {
     while (scan < end) {
         void* maybe_ptr = reinterpret_cast<void*>(*scan);
         if (allocations.find(maybe_ptr) != allocations.end()) {
-            allocation& found_block = allocations[maybe_ptr];
-            if (!found_block.marked) {
-                found_block.marked = true;
+            allocation* found_block = allocations[maybe_ptr];
+            if (!found_block->marked) {
                 walk_block(maybe_ptr);
             }
         }
@@ -63,12 +64,12 @@ void GarbageCollector::mark() {
 
     // Clear all markings
     for (auto alloc = allocations.begin(); alloc != allocations.end(); alloc++) {
-        alloc->second.marked = false;
+        alloc->second->marked = false;
     }
 
     // Traverse the root set to identify reachable objects
     for (void* root : root_set) {
-        PointerMap::iterator alloc = allocations.find(root);
+        auto alloc = allocations.find(root);
         if (alloc != allocations.end()) {
             walk_block(alloc->first); // Traverse the block's memory to identify additional references
         }
@@ -89,7 +90,7 @@ void GarbageCollector::sweep(Heap *heap) {
         heap->reset();
     }
     for (auto alloc = allocations.begin(); alloc != allocations.end(); ) {
-        if (!alloc->second.marked) {
+        if (!alloc->second->marked) {
             heap->my_free(alloc->first);
             alloc = allocations.erase(alloc);
         } else {
@@ -99,16 +100,22 @@ void GarbageCollector::sweep(Heap *heap) {
 }
 
 int GarbageCollector::add_reference(void *ptr) {
-
+    cout << "Adding reference: " << ptr << " to root_set" << endl;
+    root_set.insert(ptr);
+    return 0;
 }
 
 int GarbageCollector::delete_reference(void *ptr) {
-
+    cout << "Deleting reference: " << ptr << " from root_set" << endl;
+    root_set.erase(ptr);
+    return 0;
 }
 
 void GarbageCollector::ms_collect(Heap *heap) {
+    cout << "----- START MS_COLLECT() -----" << endl;
     mark();
     sweep(heap);
+    cout << "----- FINISH MS_COLLECT() -----" << endl;
 }
 
 void GarbageCollector::rc_collect(Heap *heap) {
