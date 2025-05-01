@@ -80,6 +80,17 @@ public:
     int add_reference(void *ptr);
 
     /**
+     * Adds a nested reference from one object to another, then increments
+     * the referenced object's reference count. Does NOT add the reference
+     * to the root set as this is not a root reference. Allows for cyclic
+     * referencing.
+     * @param src Pointer to the memory block that's being modified
+     * @param dest Pointer to the memory block that's being referenced
+     * @return 0 if successful, -1 on failure.
+     */
+    int add_nested_reference(void *src, void *dest);
+
+    /**
      * Removes a pointer from the root set.
      * Decrements the reference count of the object (if applicable).
      * @param ptr Pointer to remove.

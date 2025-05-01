@@ -99,18 +99,57 @@ void GarbageCollector::sweep(Heap *heap) {
     }
 }
 
+/**
+ * Adds a reference to the root set and increments the object's
+ * reference count.
+ * 
+ * @param ptr Pointer to add to the root set.
+ * @return 0 if successful, -1 on failure.
+ */
 int GarbageCollector::add_reference(void *ptr) {
     cout << "Adding reference: " << ptr << " to root_set" << endl;
     root_set.insert(ptr);
     return 0;
 }
 
+/**
+ * Adds a nested reference from one object to another, then increments
+ * the referenced object's reference count. Does NOT add the reference
+ * to the root set as this is not a root reference. Allows for cyclic
+ * referencing.
+ * 
+ * @param src Pointer to the memory block that's being modified
+ * @param dest Pointer to the memory block that's being referenced
+ * @return 0 if successful, -1 on failure.
+ */
+int GarbageCollector::add_nested_reference(void *src, void *dest) {
+    allocation *alloc = (allocation *)((char*)src - sizeof(allocation));
+    if (alloc->size >= sizeof(void *)) {
+        ((void **)src)[0] = dest;
+    } else {
+        cerr << "ERROR: Not enough space for nested reference!" << endl;
+        return -1;
+    }
+    return 0;
+}
+
+/**
+ * Deletes a reference from the root set.
+ * 
+ * @param ptr Pointer that is being deleted.
+ * @return 0 if successful, -1 on failure.
+ */
 int GarbageCollector::delete_reference(void *ptr) {
     cout << "Deleting reference: " << ptr << " from root_set" << endl;
     root_set.erase(ptr);
     return 0;
 }
 
+/**
+ * Executes the mark and sweep garbage collection algorithm.
+ * 
+ * @param heap Pointer to the heap to be garbage collected.
+ */
 void GarbageCollector::ms_collect(Heap *heap) {
     cout << "----- START MS_COLLECT() -----" << endl;
     mark();
@@ -118,6 +157,11 @@ void GarbageCollector::ms_collect(Heap *heap) {
     cout << "----- FINISH MS_COLLECT() -----" << endl;
 }
 
+/**
+ * Executes the reference counting garbage collection algorithm.ADJ_FREQUENCY
+ * 
+ * @param heap Pointer to the heap to be garbage collected.
+ */
 void GarbageCollector::rc_collect(Heap *heap) {
 
 }
